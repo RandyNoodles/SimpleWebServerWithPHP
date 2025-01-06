@@ -35,13 +35,13 @@ namespace Server
         }
 
 
-        TCPIPListener(TCPConfig? configData)
+        internal TCPIPListener(TCPConfig? configData)
         {
             Settings = configData;
         }
 
 
-        internal void StartListener(CancellationToken token)
+        internal async void StartListener(CancellationToken token)
         {
 
             if (Settings == null)
@@ -51,6 +51,7 @@ namespace Server
             }
 
             TcpListener listener = null;
+            
             try
             {
                 listener = new TcpListener(Settings.IpAddress, Settings.Port);
@@ -61,12 +62,26 @@ namespace Server
                 while (!token.IsCancellationRequested)
                 {
 
-                    TcpClient client = listener.AcceptTcpClient();
-                    
+                    TcpClient client = await listener.AcceptTcpClientAsync();
+                    Log("Client connected.");
+                    client.Close();
 
                     //Do all the stuff
                 }
             }
+            catch(SocketException e)
+            {
+                Log("Listener:Socket Exception: " + e.Message);
+            }
+            finally
+            {
+                
+                listener.Stop();
+            }
+        }
+
+        private async Task HandleClient(TcpClient client)
+        {
         }
 
     }
