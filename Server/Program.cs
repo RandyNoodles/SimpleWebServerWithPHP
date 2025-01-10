@@ -40,7 +40,7 @@ namespace Server
                 {
                     keyPress = Console.ReadKey(true);
                     if (keyPress.Key == ConsoleKey.Escape)
-                    {
+                    { 
                         logger.Info("Shutdown intiated via the console.");
                         shutdownManager.InitiateShutdown();
                     }
