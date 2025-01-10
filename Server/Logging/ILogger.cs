@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace Server.Logging
 {
-    internal interface ILogger
+    public interface ILogger
     {
-        internal void Info(string message);
-        internal void Err(string message);
-        internal void Warn(string message);
+        public void Info(string message);
+        public void Err(string message);
+        public void Warn(string message);
     }
 }

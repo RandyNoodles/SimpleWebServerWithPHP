@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Server.ConfigHandling;
 using Server.Logging;
+using Server.ShutdownManager;
 
 
 namespace Server
@@ -27,12 +28,13 @@ namespace Server
     {
         private TCPConfig _settings;
         private readonly ILogger _logger;
+        private ITaskShutdown _shutdownManager;
 
-
-        internal TCPIPListener(ILogger logger, TCPConfig settings)
+        internal TCPIPListener(ILogger logger, ITaskShutdown shutdownManager, TCPConfig settings)
         {
             _settings = settings;
             _logger = logger;
+            _shutdownManager = shutdownManager;
         }
 
 
@@ -71,7 +73,7 @@ namespace Server
         private Task HandleClient(TcpClient client)
         {
             //
-
+            return null;
 
 
         }
