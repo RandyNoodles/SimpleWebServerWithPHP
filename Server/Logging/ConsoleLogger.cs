@@ -12,15 +12,15 @@ namespace Server.Logging
 {
     public class ConsoleLogger : ILogger
     {
-        void ILogger.Info(string message) 
+        public void Info(string message) 
         {
             Console.WriteLine($"INFO:\t{message}");
         }
-        void ILogger.Err(string message)
+        public void Err(string message)
         {
             Console.WriteLine($"ERR:\t{message}");
         }
-        void ILogger.Warn(string message)
+        public void Warn(string message)
         {
             Console.WriteLine($"WARN:\t{message}");
         }
