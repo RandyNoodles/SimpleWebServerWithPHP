@@ -39,11 +39,13 @@ namespace Server
         }
 
 
-        internal async void StartListener(CancellationToken token)
+        internal async void StartListener()
         {
 
             TcpListener listener = null;
-            
+            CancellationToken token = _shutdownManager.GetToken();
+
+
             try
             {
                 listener = new TcpListener(_settings.IpAddress, _settings.Port);
