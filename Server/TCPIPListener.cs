@@ -7,6 +7,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Server.ConfigHandling;
+using Server.Logging;
 
 
 namespace Server
@@ -23,55 +25,41 @@ namespace Server
 
     internal class TCPIPListener
     {
-        internal TCPConfig? Settings { get; set; }
+        private TCPConfig _settings;
+        private readonly ILogger _logger;
 
-        internal event Action<string> WriteLog;
-        private void Log(string s)
+
+        internal TCPIPListener(ILogger logger, TCPConfig settings)
         {
-            if(WriteLog != null)
-            {
-                WriteLog(s);
-            }
-        }
-
-
-        internal TCPIPListener(TCPConfig? configData)
-        {
-            Settings = configData;
+            _settings = settings;
+            _logger = logger;
         }
 
 
         internal async void StartListener(CancellationToken token)
         {
 
-            if (Settings == null)
-            {
-                Log("TCP Listener aborted startup, settings null.");
-                return;
-            }
-
             TcpListener listener = null;
             
             try
             {
-                listener = new TcpListener(Settings.IpAddress, Settings.Port);
+                listener = new TcpListener(_settings.IpAddress, _settings.Port);
                 listener.Start();
-                Log("Listener started.");
+                _logger.Info("Listener started.");
 
 
                 while (!token.IsCancellationRequested)
                 {
 
-                    TcpClient client = await listener.AcceptTcpClientAsync();
-                    Log("Client connected.");
-                    client.Close();
+                    TcpClient client = await listener.AcceptTcpClientAsync(token);
+                    _ = HandleClient(client);
 
                     //Do all the stuff
                 }
             }
             catch(SocketException e)
             {
-                Log("Listener:Socket Exception: " + e.Message);
+                _logger.Err("Listener:Socket Exception: " + e.Message);
             }
             finally
             {
@@ -80,8 +68,12 @@ namespace Server
             }
         }
 
-        private async Task HandleClient(TcpClient client)
+        private Task HandleClient(TcpClient client)
         {
+
+
+
+
         }
 
     }

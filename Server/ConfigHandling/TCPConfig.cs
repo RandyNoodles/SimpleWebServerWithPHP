@@ -5,7 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Server
+namespace Server.ConfigHandling
 {
     internal class TCPConfig
     {
@@ -14,8 +14,8 @@ namespace Server
 
         internal TCPConfig(IPAddress ip, int port)
         {
-            this.IpAddress = ip;
-            this.Port = port;
+            IpAddress = ip;
+            Port = port;
         }
     }
 }

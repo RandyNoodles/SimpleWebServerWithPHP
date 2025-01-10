@@ -6,7 +6,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Server
+namespace Server.ConfigHandling
 {
     internal class ConfigManager
     {
@@ -14,11 +14,12 @@ namespace Server
         private IConfiguration? config;
         private TCPConfig? tcpSettings;
 
-        internal TCPConfig? TcpSettings { 
-            get 
+        internal TCPConfig? TcpSettings
+        {
+            get
             {
-                return loadSuccessful ? tcpSettings : null;                
-            } 
+                return loadSuccessful ? tcpSettings : null;
+            }
         }
 
         internal bool LoadSuccessful { get; }
@@ -26,12 +27,12 @@ namespace Server
         internal event Action<string>? WriteLog;
         private void Log(string s)
         {
-            WriteLog?.Invoke(s);   
+            WriteLog?.Invoke(s);
         }
 
         private ConfigManager(string configFilename)
         {
-            this.loadSuccessful = false;
+            loadSuccessful = false;
 
             ConfigurationBuilder b = new ConfigurationBuilder();
             b.SetBasePath(Directory.GetCurrentDirectory());
@@ -57,7 +58,7 @@ namespace Server
                 return;
             }
 
-            loadSuccessful = true;            
+            loadSuccessful = true;
         }
 
 
@@ -68,7 +69,7 @@ namespace Server
             {
                 throw new FormatException($"Invalid IP Address: {ipTemp}");
             }
-            
+
             if (!int.TryParse(config["ListenerSettings:Port"], out int portTemp))
             {
                 throw new InvalidCastException("Unable to parse valid integer from ListenerSettings:Port");
@@ -81,7 +82,7 @@ namespace Server
             return new TCPConfig(ipTemp, portTemp);
         }
 
-        
+
 
     }
 }
