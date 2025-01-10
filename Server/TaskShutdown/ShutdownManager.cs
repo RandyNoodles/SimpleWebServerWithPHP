@@ -13,9 +13,7 @@ namespace Server.TaskShutdown
     {
 
         private const int DEFAULT_TIMEOUT = 10000;
-        private ShutdownStatus _status;
-
-        public ShutdownStatus Status { get { return _status; } }
+        public ShutdownStatus Status { get; private set; }
 
         private CancellationTokenSource _cts;
         public CancellationToken GetToken()
@@ -32,7 +30,7 @@ namespace Server.TaskShutdown
         public ShutdownManager(ILogger logger)
         {
             Timeout = DEFAULT_TIMEOUT;
-            _status = ShutdownStatus.NotStarted;
+            Status = ShutdownStatus.NotStarted;
             _cts = new CancellationTokenSource();
             _runningTasks = new ConcurrentBag<Task>();
             _logger = logger;
@@ -40,7 +38,7 @@ namespace Server.TaskShutdown
 
         public ShutdownStatus InitiateShutdown()
         {
-            if (_status != ShutdownStatus.NotStarted)
+            if (Status != ShutdownStatus.NotStarted)
             {
                 return ShutdownStatus.AlreadyStarted;
             }
@@ -56,7 +54,7 @@ namespace Server.TaskShutdown
             catch (Exception e)
             {
                 _logger.Err($"{e.Source}::{e.Message}");
-                return _status = ShutdownStatus.Failed;
+                return Status = ShutdownStatus.Failed;
             }
             finally
             {
@@ -64,12 +62,12 @@ namespace Server.TaskShutdown
             }
 
 
-            return _status = ShutdownStatus.Success;
+            return Status = ShutdownStatus.Success;
         }
 
         public bool RegisterTask(Task task)
         {
-            if (_status == ShutdownStatus.NotStarted)
+            if (Status == ShutdownStatus.NotStarted)
             {
                 _runningTasks.Add(task);
                 return true;
