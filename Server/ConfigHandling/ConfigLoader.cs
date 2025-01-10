@@ -12,25 +12,14 @@ namespace Server.ConfigHandling
 {
     public class ConfigLoader
     {
+        private Logging.ILogger _logger;
         private ConfigurationManager configManager;        
         
-        private TCPConfig? tcpSettings;
-
-        private bool _tcpSuccess;
-        public bool TcpSuccess { get { return _tcpSuccess; } }
-
-        public TCPConfig? TcpSettings
-        {
-            get
-            {
-                return TcpSuccess ? tcpSettings : null;
-            }
-        }
-
+        private TCPConfig? _tcpSettings;
+        public TCPConfig? TcpSettings { get { return _tcpSettings; } }
         public bool LoadSuccessful { get; }
 
 
-        private Logging.ILogger _logger;
 
         public ConfigLoader(Logging.ILogger logger)
         {
@@ -39,17 +28,32 @@ namespace Server.ConfigHandling
             configManager.Sources.Clear();
         }
 
+
+        public bool AddJsonSource(string fileName)
+        {
+            try
+            {
+                configManager.SetBasePath(Directory.GetCurrentDirectory());
+                configManager.AddJsonFile(fileName, optional: false, reloadOnChange: false);
+            }
+            catch (Exception e)
+            {
+                configManager.Sources.RemoveAt(configManager.Sources.Count - 1);
+                _logger.Err(e.Message);
+            }
+            return true;
+        }
+
         public void LoadConfigSources()
         {
             if (configManager.Sources.Count == 0)
             {
                 throw new Exception("Source list is empty.");
-                return;
             }
             try
             {
                 //Parse sources into objects
-                _tcpSuccess = ParseTCPSettings();
+                ParseTCPSettings();
 
                 //PHP Stuff
 
@@ -63,22 +67,7 @@ namespace Server.ConfigHandling
         }
 
 
-        public bool AddJsonSource(string fileName)
-        {
-            try
-            {
-                configManager.SetBasePath(Directory.GetCurrentDirectory());
-                configManager.AddJsonFile(fileName, optional: false, reloadOnChange: false);
-            }
-            catch(Exception e)
-            {
-                configManager.Sources.RemoveAt(configManager.Sources.Count - 1);
-                _logger.Err(e.Message);
-            }
-            return true;
-        }
-
-        private bool ParseTCPSettings()
+        private void ParseTCPSettings()
         {
 
             if (!IPAddress.TryParse(configManager["ListenerSettings:IPAddress"], out IPAddress? ipTemp))
@@ -94,8 +83,6 @@ namespace Server.ConfigHandling
             {
                 throw new ArgumentOutOfRangeException("TcpSettings.Port", $"Port value of {portTemp} is out of range.");
             }
-
-            return true;
         }
     }
 }
