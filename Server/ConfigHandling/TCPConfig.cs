@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace Server.ConfigHandling
 {
-    internal class TCPConfig
+    public class TCPConfig
     {
-        internal IPAddress IpAddress { get; set; }
-        internal int Port { get; set; }
+        public IPAddress IpAddress { get; set; }
+        public int Port { get; set; }
 
-        internal TCPConfig(IPAddress ip, int port)
+        public TCPConfig(IPAddress ip, int port)
         {
             IpAddress = ip;
             Port = port;
