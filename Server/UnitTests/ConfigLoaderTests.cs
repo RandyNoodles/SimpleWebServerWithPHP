@@ -9,7 +9,6 @@ namespace Server.UnitTests
     [TestFixture]
     internal class ConfigLoaderTests
     {
-        [Test]
-        public void Load
+
     }
 }

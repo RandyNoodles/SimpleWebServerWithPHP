@@ -12,6 +12,7 @@ using System.Configuration;
 using Microsoft.Extensions.Configuration;
 using Server.ConfigHandling;
 using Server.Logging;
+using Server.TaskShutdown;
 
 
 namespace Server
@@ -20,17 +21,40 @@ namespace Server
     {
         static void Main(string[] args)
         {
-
-            ILogger logger = new ConsoleLogger();
-            ConfigLoader configLoader = new ConfigLoader(logger);
+            ConsoleLogger logger = new ConsoleLogger();
+            
             try
-            {
-                configLoader.AddJsonSource("appsettings.json");
-                configLoader.LoadConfigSources();
+            { 
+                
+                ShutdownManager shutdownManager = new ShutdownManager(logger);
+                ConfigLoader configLoader = new ConfigLoader(logger, "appsettings.json");
+
+                TCPIPListener server = new TCPIPListener(logger, shutdownManager, configLoader.TcpSettings);
+
+                server.StartListener();
+
+
+                //Run until user presses [Escape] key
+                ConsoleKeyInfo keyPress;
+                while (shutdownManager.Status == ShutdownStatus.NotStarted) ;
+                {
+                    keyPress = Console.ReadKey(true);
+                    if (keyPress.Key == ConsoleKey.Escape)
+                    {
+                        logger.Info("Shutdown intiated via the console.");
+                        shutdownManager.InitiateShutdown();
+                    }
+                }
+
+
             }
             catch(Exception e)
             {
-                logger.Err($"ConfigLoader encountered a critical error. Server startup aborted.\nException:{e.Message}");
+                logger.Err("Critical error encountered. Server shutting down..");   
+            }
+            finally
+            {
+                //If shutdown manager running, init shutdown
             }
             Console.ReadKey();
         }
