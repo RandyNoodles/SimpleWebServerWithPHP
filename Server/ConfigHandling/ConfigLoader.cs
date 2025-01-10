@@ -12,70 +12,53 @@ namespace Server.ConfigHandling
 {
     public class ConfigLoader
     {
-        private Logging.ILogger _logger;
-        private ConfigurationManager configManager;        
-        
-        private TCPConfig? _tcpSettings;
-        public TCPConfig? TcpSettings { get { return _tcpSettings; } }
-        public bool LoadSuccessful { get; }
+        private readonly Logging.ILogger _logger;
+        private readonly IConfigurationRoot _config;
+
+        public TCPConfig TcpSettings { get; private set; }
 
 
-
-        public ConfigLoader(Logging.ILogger logger)
+        public ConfigLoader(Logging.ILogger logger, string configFilePath)
         {
             _logger = logger;
-            configManager = new ConfigurationManager();
-            configManager.Sources.Clear();
-        }
-
-
-        public bool AddJsonSource(string fileName)
-        {
             try
             {
-                configManager.SetBasePath(Directory.GetCurrentDirectory());
-                configManager.AddJsonFile(fileName, optional: false, reloadOnChange: false);
+                var configBuilder = new ConfigurationBuilder()
+                    .SetBasePath(AppContext.BaseDirectory)
+                    .AddJsonFile(configFilePath, optional: false, reloadOnChange: false);
+
+                _config = configBuilder.Build();
+                LoadConfig();
             }
             catch (Exception e)
             {
-                configManager.Sources.RemoveAt(configManager.Sources.Count - 1);
-                _logger.Err(e.Message);
+                _logger.Err($"Failed to load configuration: {e.Message}");
+                throw;
             }
-            return true;
-        }
 
-        public void LoadConfigSources()
+        }
+        private void LoadConfig()
         {
-            if (configManager.Sources.Count == 0)
-            {
-                throw new Exception("Source list is empty.");
-            }
             try
             {
-                //Parse sources into objects
                 ParseTCPSettings();
-
-                //PHP Stuff
-
-                //Whatever else
-
             }
             catch (Exception e)
             {
-                throw new Exception("Failed to load critical settings: " + e.Message);
+                _logger.Err($"Error parsing configuration: {e.Message}");
+                throw;
             }
         }
-
 
         private void ParseTCPSettings()
         {
 
-            if (!IPAddress.TryParse(configManager["ListenerSettings:IPAddress"], out IPAddress? ipTemp))
+            if (!IPAddress.TryParse(_config["ListenerSettings:IPAddress"], out IPAddress? ipTemp))
             {
                 throw new FormatException($"Invalid IP Address: {ipTemp}");
             }
 
-            if (!int.TryParse(configManager["ListenerSettings:Port"], out int portTemp))
+            if (!int.TryParse(_config["ListenerSettings:Port"], out int portTemp))
             {
                 throw new InvalidCastException("Unable to parse valid integer from ListenerSettings:Port");
             }
