@@ -17,7 +17,8 @@ namespace Server.TaskShutdown
     }
     public interface ITaskShutdown
     {
-        public bool RegisterTask(Task task);
+        public bool RegisterTask(Task t);
+        public bool RemoveTask(Task t);
         public ShutdownStatus InitiateShutdown();
         public CancellationToken GetToken();
         public ShutdownStatus Status { get;}

@@ -21,7 +21,9 @@ namespace Server.TaskShutdown
             return _cts.Token;
         }
 
-        private ConcurrentBag<Task> _runningTasks;
+        private List<Task> _runningTasks;
+        private readonly object _lock;
+
 
         public int Timeout { get; set; }
 
@@ -29,11 +31,15 @@ namespace Server.TaskShutdown
 
         public ShutdownManager(ILogger logger)
         {
+            _logger = logger;
+
             Timeout = DEFAULT_TIMEOUT;
             Status = ShutdownStatus.NotStarted;
             _cts = new CancellationTokenSource();
-            _runningTasks = new ConcurrentBag<Task>();
-            _logger = logger;
+            
+            _runningTasks = new List<Task>();
+            _lock = new object();
+            
         }
 
         public ShutdownStatus InitiateShutdown()
@@ -66,17 +72,31 @@ namespace Server.TaskShutdown
             return Status = ShutdownStatus.Success;
         }
 
-        public bool RegisterTask(Task task)
+        public bool RegisterTask(Task t)
         {
             if (Status == ShutdownStatus.NotStarted)
             {
-                _runningTasks.Add(task);
+                lock (_lock)
+                {
+                    _runningTasks.Add(t);
+                }
                 return true;
             }
-            else
+
+            return false;
+        }
+
+        public bool RemoveTask(Task t)
+        {
+            if(Status == ShutdownStatus.NotStarted)
             {
-                return false;
+                lock (_lock)
+                {
+                    _runningTasks.Remove(t);
+                }
+                return true;
             }
+            return false;
         }
     }
 }
