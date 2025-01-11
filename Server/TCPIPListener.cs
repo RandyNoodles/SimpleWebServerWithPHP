@@ -28,9 +28,9 @@ namespace Server
     {
         private TCPConfig _settings;
         private readonly ILogger _logger;
-        private ShutdownManager _shutdownManager;
+        private ITaskShutdown _shutdownManager;
 
-        internal TCPIPListener(ILogger logger, ShutdownManager shutdownManager, TCPConfig settings)
+        internal TCPIPListener(ILogger logger, ITaskShutdown shutdownManager, TCPConfig settings)
         {
             _settings = settings;
             _logger = logger;
@@ -55,10 +55,18 @@ namespace Server
                 {
 
                     TcpClient client = await listener.AcceptTcpClientAsync(token);
-                    _ = HandleClient(client);
 
-                    //Do all the stuff
+
+                    Task clientTask = HandleClient(client);
+                    _shutdownManager.RegisterTask(clientTask);
+                    clientTask.ContinueWith(t => _shutdownManager.RemoveTask(t));
+                    
+                    
                 }
+            }
+            catch(OperationCanceledException e)
+            {
+                //Do nothing, token was cancelled as intended.
             }
             catch(SocketException e)
             {
