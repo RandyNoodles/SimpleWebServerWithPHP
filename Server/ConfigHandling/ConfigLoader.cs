@@ -35,13 +35,14 @@ namespace Server.ConfigHandling
                 _logger.Err($"Failed to load configuration: {e.Message}");
                 throw;
             }
-
+            
         }
         private void LoadConfig()
         {
             try
             {
                 ParseTCPSettings();
+                _logger.Info("TCP Settings loaded.");
             }
             catch (Exception e)
             {
