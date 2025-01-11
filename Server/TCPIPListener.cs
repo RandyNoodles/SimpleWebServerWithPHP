@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Primitives;
 using Server.ConfigHandling;
 using Server.Logging;
 using Server.TaskShutdown;
@@ -60,7 +61,14 @@ namespace Server
                     Task clientTask = HandleClient(client);
                     _shutdownManager.RegisterTask(clientTask);
                     clientTask.ContinueWith(t => _shutdownManager.RemoveTask(t));
-                    
+
+                    //What I THINK would be good:
+
+                    /*
+                    1. Get client request
+                    2. Pass to 'Handle Client'
+                    3. Call one of a series of functions/objects based on whether it was POST, PHP, idk...
+                     */
                     
                 }
             }
@@ -96,12 +104,44 @@ namespace Server
             }
         }
 
-        private Task HandleClient(TcpClient client)
+        private async Task HandleClient(TcpClient client)
         {
-            //
-            return null;
+
+            NetworkStream stream = client.GetStream();
+            try
+            {
+
+                byte[] bytes = new byte[client.ReceiveBufferSize];
+                StringBuilder requestBuffer = string.Empty;
+
+                int bytesRead;
+                while((bytesRead = stream.Read(bytes, 0, bytes.Length)) != 0)
+                {
+                    requestBuffer.Append(Encoding.ASCII.GetString(bytes));
+                }
+
+                parser.parse(requestBuffer);
+
+                Console.WriteLine(requestBuffer);
 
 
+
+
+
+
+            }
+            catch(Exception e)
+            {
+                _logger.Warn($"HandleClient() Error: {e.Message}");
+            }
+            finally
+            {
+                client.Close();
+                stream.Close();
+                client.Dispose();
+                stream.Dispose();
+                _logger.Info("Client handled.");
+            }
         }
 
     }

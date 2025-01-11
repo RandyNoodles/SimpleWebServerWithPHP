@@ -67,6 +67,8 @@ namespace Server.ConfigHandling
             {
                 throw new ArgumentOutOfRangeException("TcpSettings.Port", $"Port value of {portTemp} is out of range.");
             }
+
+            TcpSettings = new TCPConfig(ipTemp, portTemp);
         }
     }
 }
