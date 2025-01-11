@@ -40,6 +40,7 @@ namespace Server.TaskShutdown
         {
             if (Status != ShutdownStatus.NotStarted)
             {
+                _logger.Warn($"Shutdown already in progress. New shutdown request ignored.");
                 return ShutdownStatus.AlreadyStarted;
             }
 
