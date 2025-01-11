@@ -31,19 +31,25 @@ namespace Server
 
                 TCPIPListener server = new TCPIPListener(logger, shutdownManager, configLoader.TcpSettings);
 
-                server.StartListener();
+                Task listenerTask = server.StartListener();
+                shutdownManager.RegisterTask(listenerTask);
 
 
                 //Run until user presses [Escape] key
                 ConsoleKeyInfo keyPress;
-                while (shutdownManager.Status == ShutdownStatus.NotStarted) ;
+                while (shutdownManager.Status == ShutdownStatus.NotStarted)
                 {
-                    keyPress = Console.ReadKey(true);
-                    if (keyPress.Key == ConsoleKey.Escape)
-                    { 
-                        logger.Info("Shutdown intiated via the console.");
-                        shutdownManager.InitiateShutdown();
+                    if (Console.KeyAvailable)
+                    {
+                        keyPress = Console.ReadKey(true);
+                        if (keyPress.Key == ConsoleKey.Escape)
+                        { 
+                            logger.Info("Shutdown intiated via the console.");
+                            shutdownManager.InitiateShutdown();
+                            break;
+                        }
                     }
+                    Thread.Sleep(100);
                 }
 
 
@@ -56,6 +62,7 @@ namespace Server
             {
                 //If shutdown manager running, init shutdown
             }
+            Console.WriteLine("END OF PROGRAM. PRESS ANY KEY TO EXIT.");
             Console.ReadKey();
         }
     }

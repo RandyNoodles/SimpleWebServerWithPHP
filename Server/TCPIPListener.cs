@@ -28,9 +28,9 @@ namespace Server
     {
         private TCPConfig _settings;
         private readonly ILogger _logger;
-        private ITaskShutdown _shutdownManager;
+        private ShutdownManager _shutdownManager;
 
-        internal TCPIPListener(ILogger logger, ITaskShutdown shutdownManager, TCPConfig settings)
+        internal TCPIPListener(ILogger logger, ShutdownManager shutdownManager, TCPConfig settings)
         {
             _settings = settings;
             _logger = logger;
@@ -38,9 +38,8 @@ namespace Server
         }
 
 
-        internal async void StartListener()
+        internal async Task StartListener()
         {
-
             TcpListener listener = null;
             CancellationToken token = _shutdownManager.GetToken();
 
@@ -63,12 +62,29 @@ namespace Server
             }
             catch(SocketException e)
             {
-                _logger.Err("Listener:Socket Exception: " + e.Message);
+                _logger.Err("Listener.StartListener():Socket Exception: " + e.Message);                
+            }
+            catch(NullReferenceException e)
+            {
+                _logger.Err($"Listener.StartListener():Null Reference Exception: Likely the TcpSettings.");
+            }
+            catch(Exception e)
+            {
+                _logger.Err($"Listener.StartListener(): {e.Message}");
             }
             finally
             {
-                
-                listener.Stop();
+                if(listener != null && listener.Server.IsBound)
+                {
+                    listener.Stop();
+                    listener.Dispose();
+                    _logger.Info("Listener stopped.");
+                }
+                if(_shutdownManager.Status == ShutdownStatus.NotStarted)
+                {
+                    _logger.Warn("Task cleanup initiated via TCP/IP Listener due to error.");
+                    _shutdownManager.InitiateShutdown();
+                }
             }
         }
 
