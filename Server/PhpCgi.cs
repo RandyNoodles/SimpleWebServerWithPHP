@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,9 +20,12 @@ namespace Server
          * . Receive response data from stdout
          */
 
-
-        public static string RunPhP(string phpFilepath, string queryString, 
-            string requestMethod, string contentType, int contentLength, string body)
+        public static string RunPhP(string phpFilePath, string requestMethod)
+        {
+            return RunPhP(phpFilePath, requestMethod, string.Empty, string.Empty, 0, string.Empty);
+        }
+        public static string RunPhP(string phpFilepath, string requestMethod, string queryString, 
+                                    string contentType, int contentLength, string body)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
