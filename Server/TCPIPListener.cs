@@ -112,7 +112,7 @@ namespace Server
             {
 
                 byte[] bytes = new byte[client.ReceiveBufferSize];
-                StringBuilder requestBuffer = string.Empty;
+                StringBuilder requestBuffer = new StringBuilder();
 
                 int bytesRead;
                 while((bytesRead = stream.Read(bytes, 0, bytes.Length)) != 0)
@@ -120,7 +120,7 @@ namespace Server
                     requestBuffer.Append(Encoding.ASCII.GetString(bytes));
                 }
 
-                parser.parse(requestBuffer);
+                
 
                 Console.WriteLine(requestBuffer);
 

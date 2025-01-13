@@ -10,39 +10,52 @@ using System.Threading.Tasks;
 
 namespace Server.Http
 {
-    
+    struct RequestStartLine {
+        public ResponseStartLine()
+        {
+            Protocol = string.Empty;
+            Method = string.Empty;
+            QueryString = string.Empty;
+            Resource = string.Empty;
+        }
+        public RequestStartLine(string method, string resource, string queryString, string protocol)
+        {
+            Method = method;
+            Resource = resource;
+            QueryString = queryString;
+            Protocol = protocol;
+        }
+        public string Method;
+        public string Resource;
+        public string QueryString;
+        public string Protocol;
+    }
+    struct ResponseStartLine
+    {
+        public ResponseStartLine()
+        {
+            Protocol = string.Empty;
+            ResponseCode = 0;
+            ReasonPhrase = string.Empty;
+            ReasonPhraseExpanded = string.Empty;
+        }
+        public ResponseStartLine(string protocol, int responseCode, string reasonPhrase, string reasonPhraseExpanded)
+        {
+            Protocol = protocol;
+            ResponseCode = responseCode;
+            ReasonPhrase = reasonPhrase;
+            ReasonPhraseExpanded = reasonPhraseExpanded;
+        }
+        public string Protocol;
+        public int ResponseCode;
+        public string ReasonPhrase;
+        public string ReasonPhraseExpanded;
+    }
     internal class Http
     {
-        struct RequestStartLine
-        {
-            public RequestStartLine(string method, string resource, string queryString, string protocol)
-            {
-                Method = method;
-                Resource = resource;
-                QueryString = queryString;
-                Protocol = protocol;
-            }
-            string Method;
-            string Resource;
-            string QueryString;
-            string Protocol;
-        }
-        struct ResponseStartLine
-        {
-            public ResponseStartLine(string protocol, int responseCode, string reasonPhrase, string reasonPhraseExpanded)
-            {
-                Protocol = protocol;
-                ResponseCode = responseCode;
-                ReasonPhrase = reasonPhrase;
-                ReasonPhraseExpanded = reasonPhraseExpanded;
-            }
-            string Protocol;
-            int ResponseCode;
-            string ReasonPhrase;
-            string ReasonPhraseExpanded;
-        }
+        public RequestStartLine RequestStartLine;
+        public ResponseStartLine ResponseStartLine;
         static private ConsoleLogger _logger = new ConsoleLogger();
-        public Dictionary<HeaderType, string> Headers { get; set; }
         public Dictionary<string, string> Headers { get; set; }
         public List<string> RejectedHeaders { get; set; }
         public string Body { get; set; }
@@ -84,18 +97,12 @@ namespace Server.Http
         }
      
 
-
         public Http()
         {
-            Headers = new Dictionary<HeaderType, string>();
-            RawHeaders = new Dictionary<string, string>();
+            ResponseStartLine = new ResponseStartLine();
+            Headers = new Dictionary<string, string>();
             RejectedHeaders = new List<string>();
             Body = string.Empty;
-        }
-
-        public static bool GetHeaderType(string headerName, out Http.HeaderType header)
-        {
-            return Enum.TryParse<HeaderType>(headerName, out header);
         }
 
         #region Requests
@@ -105,6 +112,8 @@ namespace Server.Http
             string strRequest = Encoding.UTF8.GetString(rawRequest);
             return TryParseRequest(strRequest, out parsedRequest);
         }
+
+
         public static bool TryParseRequest(string rawRequest, out Http parsedRequest)
         {
             //Parse StartLine -> If malformed, reject it.
@@ -116,8 +125,6 @@ namespace Server.Http
             //Check all required headers are present
 
             //IF NOT GET
-            //Check for 
-
 
 
             parsedRequest = null;
@@ -134,12 +141,20 @@ namespace Server.Http
                     return false;
                 }
 
-                parsedRequest.Headers.Add(HeaderType.Method, method);
-                parsedRequest.Headers.Add(HeaderType.Protocol, protocol);
-                parsedRequest.Headers.Add(HeaderType.Resource, resource);
+                parsedRequest.RequestStartLine.Method = method;
+                parsedRequest.RequestStartLine.Resource = resource;
+                parsedRequest.RequestStartLine.Protocol = protocol;
                 if (!string.IsNullOrEmpty(queryString))
                 {
-                    parsedRequest.Headers.Add(HeaderType.QueryString, queryString);
+                    parsedRequest.RequestStartLine.QueryString = queryString;
+                }
+
+
+                //Check for blank line
+                if (!ValidateBlankLine(lines))
+                {
+                    _logger.Err("Missing blank line in request header.");
+                    return false;
                 }
 
                 int headerEndIndex = ParseRequestHeaders(lines, parsedRequest);
@@ -149,16 +164,23 @@ namespace Server.Http
                     return false;
                 }
 
-                parsedRequest.Body = string.Join("\r\n", lines[(headerEndIndex + 1)..]);
-
-                if (parsedRequest.Headers[HeaderType.Method] != "GET" &&
-                int.TryParse(parsedRequest.Headers.GetValueOrDefault(HeaderType.ContentLength, "0"), out int contentLength))
+                if (parsedRequest.RequestStartLine.Method != "GET")
                 {
-                    if (contentLength != parsedRequest.Body.Length)
+                    if (!int.TryParse(parsedRequest.Headers.GetValueOrDefault("Content-Length", "0"), out int contentLength))
                     {
-                        _logger.Warn("Content-Length mismatch.");
+
+                        _logger.Err("Content-Length missing.");
                         return false;
                     }
+
+                    parsedRequest.Body = string.Join("\r\n", lines[(headerEndIndex + 1)..]);
+
+                    if (contentLength != parsedRequest.Body.Length)
+                    {
+                        _logger.Err("Content-Length does not match body of request.");
+                        return false;
+                    }
+
                 }
             }
             catch (Exception e)
@@ -193,53 +215,13 @@ namespace Server.Http
                 string name = line.Substring(0, separatorIndex).Trim();
                 string value = line.Substring(separatorIndex + 1).Trim();
 
-                // Add to RawHeaders regardless of validity
-                parsedRequest.RawHeaders[name] = value;
-
-                // Validate header name and value
-                if (!CheckIfHeaderSupported(name) || !ValidateHeaderValue(value))
-                {
-                    _logger.Err($"Invalid header: {name}");
-                    parsedRequest.RejectedHeaders.Add(line);
-                }
-                else if (GetHeaderType(name, out HeaderType headerType))
-                {
-                    // Add supported headers to Headers dictionary
-                    parsedRequest.Headers[headerType] = value;
-                }
-                else
-                {
-                    // Unsupported headers are logged but not added to Headers
-                    _logger.Warn($"Unsupported header: {name}");
-                }
+                // Add to Headers if it fits the Name: Value format
+                parsedRequest.Headers[name] = value;
 
                 i++;
             }
 
             return i;
-        }
-
-        private static bool RequiredRequestHeaders(Dictionary<HeaderType, string> request)
-        {
-            if(request == null)
-            {
-                return false;
-            }
-            if(!request.ContainsKey(HeaderType.Method) || 
-                !request.ContainsKey(HeaderType.Protocol) ||
-                !request.ContainsKey(HeaderType.Resource))
-            {
-                return false;
-            }
-            if (request[HeaderType.Method] != "GET")
-            {
-                if(!request.ContainsKey(HeaderType.ContentLength)||
-                    !request.ContainsKey(HeaderType.ContentType))
-                {
-                    return false;
-                }
-            }
-            return true;
         }
         private static bool TryParseRequestStartLine(string startLine, 
             out string method, out string resource, out string protocol, out string queryString)
@@ -281,36 +263,9 @@ namespace Server.Http
             }
             return true;
         }
-
-        public static Dictionary<string, string> FilterSupportedHeaders(Dictionary<string, string> headers)
+        private static bool ValidateBlankLine(string[] lines)
         {
-            var filteredHeaders = new Dictionary<string, string>();
-
-            foreach (var header in headers)
-            {
-                string name = header.Key;
-                string value = header.Value;
-
-                //Check if the header is supported
-                if (SupportedHeaders.Contains(name))
-                {
-                    //Validate before adding to filtered list
-                    if (ValidateHeaderValue(name))
-                    {
-                        filteredHeaders[name] = value;
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Invalid header ignored: {name}");
-                }
-            }
-
-            return filteredHeaders;
-        }
-        public static bool CheckIfHeaderSupported(string headerName)
-        {
-            return SupportedHeaders.Contains(headerName);
+            return !lines.Contains<string>("\r\n");
         }
         public static bool ValidateHeaderValue(string headerValue)
         {
