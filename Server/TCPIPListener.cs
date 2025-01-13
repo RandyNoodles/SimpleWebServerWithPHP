@@ -120,6 +120,15 @@ namespace Server
                     requestBuffer.Append(Encoding.ASCII.GetString(bytes));
                 }
 
+
+                Http response = new Http();
+
+                if(!Http.TryParseRequest(requestBuffer.ToString(), out Http parsedRequest))
+                {
+                    response.ResponseStartLine = new ResponseStartLine("HTTP/1.1", 400, "Bad Request",
+                                                    "Cannot process request due to malformed syntax.");
+                    SendResponse(stream, response);
+                }
                 
 
                 Console.WriteLine(requestBuffer);
@@ -144,5 +153,9 @@ namespace Server
             }
         }
 
+        private void SendResponse(NetworkStream stream, Http Response)
+        {
+            throw new NotImplementedException("Gotta make this still.");
+        }
     }
 }
