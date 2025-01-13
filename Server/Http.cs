@@ -8,9 +8,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace Server.Http
+namespace Server
 {
-    struct RequestStartLine {
+    struct RequestStartLine
+    {
         public ResponseStartLine()
         {
             Protocol = string.Empty;
@@ -95,7 +96,7 @@ namespace Server.Http
             ContentLength,
             Date
         }
-     
+
 
         public Http()
         {
@@ -223,7 +224,7 @@ namespace Server.Http
 
             return i;
         }
-        private static bool TryParseRequestStartLine(string startLine, 
+        private static bool TryParseRequestStartLine(string startLine,
             out string method, out string resource, out string protocol, out string queryString)
         {
             method = string.Empty;
@@ -244,8 +245,8 @@ namespace Server.Http
                 return false;
             }
 
-            if (!ValidateMethod(split[0])) {  return false; }
-            if (!ValidateProtocol(split[2])) {  return false; }
+            if (!ValidateMethod(split[0])) { return false; }
+            if (!ValidateProtocol(split[2])) { return false; }
 
             method = split[0];
             protocol = split[2];
@@ -265,7 +266,7 @@ namespace Server.Http
         }
         private static bool ValidateBlankLine(string[] lines)
         {
-            return !lines.Contains<string>("\r\n");
+            return !lines.Contains("\r\n");
         }
         public static bool ValidateHeaderValue(string headerValue)
         {
