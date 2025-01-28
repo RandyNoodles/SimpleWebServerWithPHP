@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
 using Server.ConfigHandling;
+using Server.HttpHandling;
 using Server.Logging;
 using Server.TaskShutdown;
 
